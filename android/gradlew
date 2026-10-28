@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+
+#
+# Gradle wrapper script for SokoLink Android Project
+#
+APP_HOME=$(cd "$(dirname "$0")" && pwd)
+exec gradle "$@"
