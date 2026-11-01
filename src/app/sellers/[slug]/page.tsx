@@ -9,6 +9,9 @@ interface SellerStorefrontProps {
   params: Promise<{ slug: string }>;
 }
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function SellerStorefront({ params }: SellerStorefrontProps) {
   const { slug } = await params;
 

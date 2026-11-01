@@ -14,8 +14,12 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const connectionString =
+let connectionString =
   process.env.DATABASE_URL || "postgresql://wiseman:sokolink_pass@localhost:5432/sokolink?schema=public";
+
+if (connectionString.includes("sslmode=require") && !connectionString.includes("uselibpqcompat=")) {
+  connectionString += connectionString.includes("?") ? "&uselibpqcompat=true" : "?uselibpqcompat=true";
+}
 
 const isNeonOrSsl =
   connectionString.includes("neon.tech") ||

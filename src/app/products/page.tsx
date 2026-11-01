@@ -17,6 +17,21 @@ interface ProductsPageProps {
   }>;
 }
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+type CategoryWithCount = Prisma.CategoryGetPayload<{
+  include: { _count: { select: { products: true } } };
+}>;
+
+type ProductWithRelations = Prisma.ProductGetPayload<{
+  include: {
+    images: { orderBy: { displayOrder: "asc" } };
+    category: true;
+    sme: true;
+  };
+}>;
+
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
   const params = await searchParams;
   const search = params.search || "";
@@ -63,24 +78,35 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   if (sort === "price-desc") orderBy = { price: "desc" };
   if (sort === "rating") orderBy = { rating: "desc" };
 
-  const [categories, total, products] = await Promise.all([
-    prisma.category.findMany({
-      where: { isActive: true },
-      include: { _count: { select: { products: true } } },
-    }),
-    prisma.product.count({ where }),
-    prisma.product.findMany({
-      where,
-      include: {
-        images: { orderBy: { displayOrder: "asc" } },
-        category: true,
-        sme: true,
-      },
-      orderBy,
-      skip,
-      take: limit,
-    }),
-  ]);
+  let categories: CategoryWithCount[] = [];
+  let total = 0;
+  let products: ProductWithRelations[] = [];
+
+  try {
+    const [c, t, p] = await Promise.all([
+      prisma.category.findMany({
+        where: { isActive: true },
+        include: { _count: { select: { products: true } } },
+      }),
+      prisma.product.count({ where }),
+      prisma.product.findMany({
+        where,
+        include: {
+          images: { orderBy: { displayOrder: "asc" } },
+          category: true,
+          sme: true,
+        },
+        orderBy,
+        skip,
+        take: limit,
+      }),
+    ]);
+    categories = c;
+    total = t;
+    products = p;
+  } catch (error) {
+    console.warn("ProductsPage: database query failed, using empty fallback list:", error);
+  }
 
   const totalPages = Math.ceil(total / limit);
 

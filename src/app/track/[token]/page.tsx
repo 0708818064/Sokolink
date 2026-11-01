@@ -19,6 +19,9 @@ interface TrackingPageProps {
   params: Promise<{ token: string }>;
 }
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function OrderTrackingPage({ params }: TrackingPageProps) {
   const { token } = await params;
 
