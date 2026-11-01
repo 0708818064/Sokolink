@@ -22,6 +22,11 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // CORS setup
+const customOrigins = (process.env.CORS_ORIGIN || "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
 const allowedOrigins = [
   "http://localhost:3000",
   "http://127.0.0.1:3000",
@@ -29,17 +34,21 @@ const allowedOrigins = [
   "http://10.202.146.182:3000",
   "http://10.202.146.182:5000",
   process.env.NEXT_PUBLIC_APP_URL,
+  process.env.FRONTEND_URL,
+  ...customOrigins,
 ].filter(Boolean) as string[];
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl)
+      // Allow requests with no origin (like mobile apps, curl, server-to-server)
       if (!origin) return callback(null, true);
-      if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== "production") {
-        return callback(null, true);
-      }
-      return callback(new Error("Not allowed by CORS"));
+      if (process.env.CORS_ORIGIN === "*") return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      // Automatically permit vercel deployments
+      if (origin.endsWith(".vercel.app")) return callback(null, true);
+      if (process.env.NODE_ENV !== "production") return callback(null, true);
+      return callback(new Error(`Not allowed by CORS: ${origin}`));
     },
     credentials: true,
   })

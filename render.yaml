@@ -1,0 +1,44 @@
+services:
+  - type: web
+    name: sokolink-backend
+    runtime: node
+    plan: starter
+    region: oregon
+    rootDir: backend
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npm run deploy:start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        sync: false
+        # Set to Neon Serverless pooled connection string:
+        # postgresql://[user]:[password]@[endpoint]-pooler.[region].aws.neon.tech/[dbname]?sslmode=require
+      - key: DIRECT_URL
+        sync: false
+        # Set to Neon Serverless direct connection string:
+        # postgresql://[user]:[password]@[endpoint].[region].aws.neon.tech/[dbname]?sslmode=require
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        sync: false
+        # e.g. https://sokolink.vercel.app or *
+      - key: FRONTEND_URL
+        sync: false
+        # e.g. https://sokolink.vercel.app
+      - key: MPESA_ENVIRONMENT
+        value: sandbox
+      - key: MPESA_CONSUMER_KEY
+        sync: false
+      - key: MPESA_CONSUMER_SECRET
+        sync: false
+      - key: MPESA_PASSKEY
+        sync: false
+      - key: MPESA_SHORTCODE
+        value: "174379"
+      - key: MPESA_CALLBACK_URL
+        sync: false
