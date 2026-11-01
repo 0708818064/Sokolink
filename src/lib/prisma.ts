@@ -1,3 +1,12 @@
+import net from "node:net";
+if (net.setDefaultAutoSelectFamily) {
+  net.setDefaultAutoSelectFamily(false);
+}
+import dns from "node:dns";
+try {
+  dns.setDefaultResultOrder("ipv4first");
+} catch {}
+
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 import { Pool } from "pg";
@@ -5,12 +14,22 @@ import { Pool } from "pg";
 const connectionString =
   process.env.DATABASE_URL || "postgresql://wiseman:sokolink_pass@localhost:5432/sokolink?schema=public";
 
+const isNeonOrSsl =
+  connectionString.includes("neon.tech") ||
+  connectionString.includes("sslmode=require") ||
+  process.env.NODE_ENV === "production";
+
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
   pool: Pool | undefined;
 };
 
-const pool = globalForPrisma.pool ?? new Pool({ connectionString });
+const pool =
+  globalForPrisma.pool ??
+  new Pool({
+    connectionString,
+    ssl: isNeonOrSsl ? { rejectUnauthorized: false } : undefined,
+  });
 const adapter = new PrismaPg(pool);
 
 export const prisma =

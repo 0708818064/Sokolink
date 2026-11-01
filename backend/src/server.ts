@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+import { prisma } from "./lib/prisma.js";
 import { authenticate } from "./middleware/auth.js";
 import { authRouter } from "./routes/auth.routes.js";
 import { productsRouter } from "./routes/products.routes.js";
@@ -62,13 +63,28 @@ app.use(cookieParser());
 app.use(authenticate);
 
 // Health check endpoint
-app.get("/api/health", (_req: Request, res: Response) => {
-  res.json({
-    status: "ok",
-    service: "sokolink-backend-api",
-    timestamp: new Date().toISOString(),
-    version: "1.0.0",
-  });
+app.get("/api/health", async (_req: Request, res: Response) => {
+  try {
+    const dbTest = await prisma.$queryRaw<Array<{ now: Date; db: string }>>`SELECT NOW() as now, current_database() as db`;
+    res.json({
+      status: "ok",
+      service: "sokolink-backend-api",
+      timestamp: new Date().toISOString(),
+      version: "1.0.0",
+      neon: {
+        database: dbTest[0]?.db,
+        branch: process.env.NEON_BRANCH || "production",
+        auth: Boolean(process.env.NEON_AUTH_BASE_URL),
+        authBaseUrl: process.env.NEON_AUTH_BASE_URL,
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      status: "error",
+      service: "sokolink-backend-api",
+      error: err.message,
+    });
+  }
 });
 
 // API Routes
