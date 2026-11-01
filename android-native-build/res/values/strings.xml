@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SokoLink</string>
+    <string name="loading_text">Connecting to SokoLink Marketplace...</string>
+    <string name="offline_title">Connection Error</string>
+    <string name="offline_msg">Could not connect to SokoLink server. Please check your network and try again.</string>
+    <string name="retry">Retry</string>
+</resources>
