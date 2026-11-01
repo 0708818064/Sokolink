@@ -5,4 +5,9 @@
     <string name="offline_title">Connection Error</string>
     <string name="offline_msg">Could not connect to SokoLink server. Please check your network and try again.</string>
     <string name="retry">Retry</string>
+    <string name="change_server">Change Server Address</string>
+    <string name="dialog_server_title">SokoLink Server URL</string>
+    <string name="dialog_server_msg">Enter your deployed Vercel domain (e.g. https://sokolink.vercel.app) or local Wi-Fi IP:</string>
+    <string name="save">Save and Connect</string>
+    <string name="cancel">Cancel</string>
 </resources>

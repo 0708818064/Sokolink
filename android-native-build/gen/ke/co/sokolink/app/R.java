@@ -22,6 +22,7 @@ public final class R {
         public static final int ic_launcher=0x7f020000;
     }
     public static final class id {
+        public static final int btnChangeServer=0x7f070004;
         public static final int btnRetry=0x7f070003;
         public static final int errorLayout=0x7f070002;
         public static final int progressBar=0x7f070001;
@@ -32,10 +33,15 @@ public final class R {
     }
     public static final class string {
         public static final int app_name=0x7f050000;
+        public static final int cancel=0x7f050009;
+        public static final int change_server=0x7f050005;
+        public static final int dialog_server_msg=0x7f050007;
+        public static final int dialog_server_title=0x7f050006;
         public static final int loading_text=0x7f050001;
         public static final int offline_msg=0x7f050003;
         public static final int offline_title=0x7f050002;
         public static final int retry=0x7f050004;
+        public static final int save=0x7f050008;
     }
     public static final class style {
         public static final int AppTheme=0x7f060000;

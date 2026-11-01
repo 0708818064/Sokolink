@@ -1,7 +1,10 @@
 package ke.co.sokolink.app;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
@@ -13,18 +16,23 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.Toast;
 
 public class MainActivity extends Activity {
 
-    // Primary server URL pointing to your local Wi-Fi IP
-    private static final String SOKOLINK_URL = "http://10.202.146.182:3000";
+    private static final String PREFS_NAME = "SokoLinkPrefs";
+    private static final String KEY_SERVER_URL = "server_url";
+    // Default URL pointing to current live development server IP
+    private static final String DEFAULT_URL = "http://10.243.15.181:3000";
 
     private WebView webView;
     private ProgressBar progressBar;
     private LinearLayout errorLayout;
     private Button btnRetry;
+    private Button btnChangeServer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,6 +43,7 @@ public class MainActivity extends Activity {
         progressBar = (ProgressBar) findViewById(R.id.progressBar);
         errorLayout = (LinearLayout) findViewById(R.id.errorLayout);
         btnRetry = (Button) findViewById(R.id.btnRetry);
+        btnChangeServer = (Button) findViewById(R.id.btnChangeServer);
 
         configureWebView();
 
@@ -43,11 +52,65 @@ public class MainActivity extends Activity {
             public void onClick(View v) {
                 errorLayout.setVisibility(View.GONE);
                 webView.setVisibility(View.VISIBLE);
-                webView.loadUrl(SOKOLINK_URL);
+                webView.loadUrl(getServerUrl());
             }
         });
 
-        webView.loadUrl(SOKOLINK_URL);
+        if (btnChangeServer != null) {
+            btnChangeServer.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    showChangeServerDialog();
+                }
+            });
+        }
+
+        webView.loadUrl(getServerUrl());
+    }
+
+    private String getServerUrl() {
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        return prefs.getString(KEY_SERVER_URL, DEFAULT_URL);
+    }
+
+    private void setServerUrl(String url) {
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        prefs.edit().putString(KEY_SERVER_URL, url).apply();
+    }
+
+    private void showChangeServerDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(R.string.dialog_server_title);
+        builder.setMessage(R.string.dialog_server_msg);
+
+        final EditText input = new EditText(this);
+        input.setSingleLine(true);
+        input.setText(getServerUrl());
+        input.setSelection(input.getText().length());
+        
+        int paddingPx = (int) (16 * getResources().getDisplayMetrics().density);
+        input.setPadding(paddingPx, paddingPx, paddingPx, paddingPx);
+        builder.setView(input);
+
+        builder.setPositiveButton(R.string.save, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                String raw = input.getText().toString().trim();
+                if (raw.length() > 0) {
+                    if (!raw.startsWith("http://") && !raw.startsWith("https://")) {
+                        raw = "https://" + raw;
+                    }
+                    setServerUrl(raw);
+                    Toast.makeText(MainActivity.this, "Connecting to: " + raw, Toast.LENGTH_SHORT).show();
+                    errorLayout.setVisibility(View.GONE);
+                    webView.setVisibility(View.VISIBLE);
+                    webView.loadUrl(raw);
+                }
+            }
+        });
+
+        builder.setNegativeButton(R.string.cancel, null);
+        builder.show();
     }
 
     private void configureWebView() {

@@ -56,6 +56,18 @@
             android:paddingRight="24dp"
             android:text="@string/retry"
             android:textColor="@color/white" />
+
+        <Button
+            android:id="@+id/btnChangeServer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="#e2e8f0"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:text="@string/change_server"
+            android:textColor="#0f172a"
+            android:textSize="12sp" />
     </LinearLayout>
 
 </RelativeLayout>
