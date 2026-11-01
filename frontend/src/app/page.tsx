@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { HomeProductGrid } from "@/components/HomeProductGrid";
 import {
   Store,
@@ -17,35 +18,68 @@ import {
   Tag,
 } from "lucide-react";
 
+type CategoryWithCount = Prisma.CategoryGetPayload<{
+  include: {
+    _count: { select: { products: true } };
+  };
+}>;
+
+type FeaturedProductWithRelations = Prisma.ProductGetPayload<{
+  include: {
+    images: { orderBy: { displayOrder: "asc" } };
+    category: true;
+    sme: true;
+  };
+}>;
+
+type SMEWithCount = Prisma.SMEProfileGetPayload<{
+  include: {
+    _count: { select: { products: true } };
+  };
+}>;
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function HomePage() {
   // Fetch featured products, categories, and SMEs from PostgreSQL
-  const [categories, featuredProducts, recommendedSmes] = await Promise.all([
-    prisma.category.findMany({
-      where: { isActive: true },
-      include: {
-        _count: { select: { products: true } },
-      },
-      take: 6,
-    }),
-    prisma.product.findMany({
-      where: { isActive: true, isApproved: true },
-      include: {
-        images: { orderBy: { displayOrder: "asc" } },
-        category: true,
-        sme: true,
-      },
-      orderBy: { rating: "desc" },
-      take: 8,
-    }),
-    prisma.sMEProfile.findMany({
-      where: { status: "APPROVED", isFeatured: true },
-      include: {
-        _count: { select: { products: true } },
-      },
-      take: 3,
-    }),
-  ]);
+  let categories: CategoryWithCount[] = [];
+  let featuredProducts: FeaturedProductWithRelations[] = [];
+  let recommendedSmes: SMEWithCount[] = [];
+
+  try {
+    const [cats, prods, smes] = await Promise.all([
+      prisma.category.findMany({
+        where: { isActive: true },
+        include: {
+          _count: { select: { products: true } },
+        },
+        take: 6,
+      }),
+      prisma.product.findMany({
+        where: { isActive: true, isApproved: true },
+        include: {
+          images: { orderBy: { displayOrder: "asc" } },
+          category: true,
+          sme: true,
+        },
+        orderBy: { rating: "desc" },
+        take: 8,
+      }),
+      prisma.sMEProfile.findMany({
+        where: { status: "APPROVED", isFeatured: true },
+        include: {
+          _count: { select: { products: true } },
+        },
+        take: 3,
+      }),
+    ]);
+    categories = cats;
+    featuredProducts = prods;
+    recommendedSmes = smes;
+  } catch (error) {
+    console.warn("HomePage: Database query failed, using empty fallback list:", error);
+  }
 
   // Format products for component
   const formattedProducts = featuredProducts.map((p) => ({
