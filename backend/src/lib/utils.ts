@@ -1,10 +1,3 @@
-import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
-
 export function formatCurrencyKES(amount: number | string | null | undefined): string {
   if (amount === null || amount === undefined || isNaN(Number(amount))) {
     return "KES 0.00";
