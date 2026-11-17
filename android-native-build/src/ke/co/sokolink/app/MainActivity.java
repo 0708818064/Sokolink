@@ -33,6 +33,7 @@ public class MainActivity extends Activity {
     private LinearLayout errorLayout;
     private Button btnRetry;
     private Button btnChangeServer;
+    private long backPressedTime = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -122,7 +123,7 @@ public class MainActivity extends Activity {
         settings.setLoadWithOverviewMode(true);
         settings.setGeolocationEnabled(true);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
-        settings.setUserAgentString(settings.getUserAgentString() + " SokoLinkAndroid/1.0");
+        settings.setUserAgentString(settings.getUserAgentString() + " SokoLinkAndroid/1.1");
 
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
@@ -191,10 +192,28 @@ public class MainActivity extends Activity {
     }
 
     @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (keyCode == KeyEvent.KEYCODE_BACK && webView.canGoBack()) {
+    public void onBackPressed() {
+        if (webView != null && webView.canGoBack()) {
             webView.goBack();
-            return true;
+            return;
+        }
+
+        // On root page: double-tap back within 2 seconds to exit gracefully
+        if (backPressedTime + 2000 > System.currentTimeMillis()) {
+            super.onBackPressed();
+        } else {
+            Toast.makeText(this, "Press back again to exit SokoLink", Toast.LENGTH_SHORT).show();
+            backPressedTime = System.currentTimeMillis();
+        }
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            if (webView != null && webView.canGoBack()) {
+                webView.goBack();
+                return true;
+            }
         }
         return super.onKeyDown(keyCode, event);
     }
