@@ -20,6 +20,13 @@ export async function POST(req: Request) {
       address,
       registrationNumber,
       taxPin,
+      // SME KYC fields
+      idNumber,
+      idType = "NATIONAL_ID",
+      idDocUrl,
+      kraPinDocUrl,
+      businessPermitUrl,
+      mpesaPayoutNumber,
     } = body;
 
     if (!email || !password || !name) {
@@ -78,8 +85,16 @@ export async function POST(req: Request) {
             phone,
             location,
             address: address || location,
-            registrationNumber,
-            taxPin,
+            registrationNumber: registrationNumber || null,
+            taxPin: taxPin ? taxPin.toUpperCase().trim() : null,
+            idNumber: idNumber || null,
+            idType: idType || "NATIONAL_ID",
+            idDocUrl: idDocUrl || null,
+            kraPinDocUrl: kraPinDocUrl || null,
+            businessPermitUrl: businessPermitUrl || null,
+            mpesaPayoutNumber: mpesaPayoutNumber || phone,
+            kycStatus: "PENDING",
+            kycSubmittedAt: new Date(),
             status: SmeStatus.PENDING,
           },
         });

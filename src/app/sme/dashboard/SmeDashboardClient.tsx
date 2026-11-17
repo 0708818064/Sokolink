@@ -23,6 +23,12 @@ import {
   MessageSquare,
   Check,
   Phone,
+  Lock,
+  FileText,
+  Building2,
+  CreditCard,
+  AlertCircle,
+  User,
 } from "lucide-react";
 
 interface AvailableRider {
@@ -64,6 +70,20 @@ interface SmeClientProps {
     totalRevenue: number;
     pendingOrdersCount: number;
     lowStockCount: number;
+    // KYC Compliance fields
+    kycStatus: string;
+    idNumber?: string | null;
+    idType?: string | null;
+    taxPin?: string | null;
+    registrationNumber?: string | null;
+    mpesaPayoutNumber?: string | null;
+    idDocUrl?: string | null;
+    kraPinDocUrl?: string | null;
+    businessPermitUrl?: string | null;
+    kycSubmittedAt?: string | null;
+    kycVerifiedAt?: string | null;
+    kycNotes?: string | null;
+    isVerified: boolean;
   };
   categories: { id: string; name: string }[];
   products: {
@@ -83,10 +103,81 @@ interface SmeClientProps {
   orders: OrderRow[];
 }
 
-export function SmeDashboardClient({ sme, categories, products: initialProducts, orders }: SmeClientProps) {
-  const [activeTab, setActiveTab] = useState<"products" | "orders">("products");
+export function SmeDashboardClient({ sme: initialSme, categories, products: initialProducts, orders }: SmeClientProps) {
+  const [sme, setSme] = useState(initialSme);
+  const [activeTab, setActiveTab] = useState<"products" | "orders" | "kyc">("products");
   const [products, setProducts] = useState(initialProducts);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showKycModal, setShowKycModal] = useState(false);
+
+  // KYC Form State
+  const [kycIdType, setKycIdType] = useState<"NATIONAL_ID" | "PASSPORT" | "ALIEN_ID">(
+    (initialSme.idType as "NATIONAL_ID" | "PASSPORT" | "ALIEN_ID") || "NATIONAL_ID"
+  );
+  const [kycIdNumber, setKycIdNumber] = useState(initialSme.idNumber || "");
+  const [kycTaxPin, setKycTaxPin] = useState(initialSme.taxPin || "");
+  const [kycRegNumber, setKycRegNumber] = useState(initialSme.registrationNumber || "");
+  const [kycMpesaPayout, setKycMpesaPayout] = useState(initialSme.mpesaPayoutNumber || "");
+  const [kycIdDocUrl, setKycIdDocUrl] = useState(initialSme.idDocUrl || "");
+  const [kycKraPinDocUrl, setKycKraPinDocUrl] = useState(initialSme.kraPinDocUrl || "");
+  const [kycBusinessPermitUrl, setKycBusinessPermitUrl] = useState(initialSme.businessPermitUrl || "");
+  const [submittingKyc, setSubmittingKyc] = useState(false);
+  const [kycError, setKycError] = useState("");
+  const [kycSuccess, setKycSuccess] = useState("");
+
+  const handleSubmitKyc = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setKycError("");
+    setKycSuccess("");
+    setSubmittingKyc(true);
+
+    try {
+      const res = await fetch("/api/sme/kyc", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          idType: kycIdType,
+          idNumber: kycIdNumber,
+          taxPin: kycTaxPin,
+          registrationNumber: kycRegNumber,
+          mpesaPayoutNumber: kycMpesaPayout,
+          idDocUrl: kycIdDocUrl,
+          kraPinDocUrl: kycKraPinDocUrl,
+          businessPermitUrl: kycBusinessPermitUrl,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to submit KYC");
+      }
+
+      setSme((prev) => ({
+        ...prev,
+        kycStatus: "PENDING",
+        idType: kycIdType,
+        idNumber: kycIdNumber,
+        taxPin: kycTaxPin,
+        registrationNumber: kycRegNumber,
+        mpesaPayoutNumber: kycMpesaPayout,
+        idDocUrl: kycIdDocUrl,
+        kraPinDocUrl: kycKraPinDocUrl,
+        businessPermitUrl: kycBusinessPermitUrl,
+        kycSubmittedAt: new Date().toISOString(),
+      }));
+
+      setKycSuccess("KYC verification documents submitted successfully! Admin review usually takes 12-24 hours.");
+      setTimeout(() => {
+        setShowKycModal(false);
+        setKycSuccess("");
+      }, 2000);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Error submitting KYC";
+      setKycError(msg);
+    } finally {
+      setSubmittingKyc(false);
+    }
+  };
 
   // Dispatch state
   const [orderList, setOrderList] = useState<OrderRow[]>(orders);
@@ -205,6 +296,12 @@ export function SmeDashboardClient({ sme, categories, products: initialProducts,
 
       const data = await res.json();
       if (!res.ok) {
+        if (res.status === 403 && data.requiresKyc) {
+          setShowAddModal(false);
+          setShowKycModal(true);
+          setKycError(data.error);
+          return;
+        }
         throw new Error(data.error || "Failed to create product");
       }
 
@@ -253,17 +350,20 @@ export function SmeDashboardClient({ sme, categories, products: initialProducts,
             <h1 className="text-2xl font-black text-slate-900 tracking-tight">{sme.businessName}</h1>
             <span
               className={`text-xs px-2.5 py-0.5 rounded-full font-bold uppercase ${
-                sme.status === "APPROVED"
+                sme.isVerified
                   ? "bg-emerald-100 text-emerald-800"
+                  : sme.kycStatus === "REJECTED"
+                  ? "bg-red-100 text-red-800"
                   : "bg-amber-100 text-amber-800"
               }`}
             >
-              {sme.status}
+              {sme.isVerified ? "Verified Merchant" : `KYC: ${sme.kycStatus || "PENDING"}`}
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
             Category: <strong className="text-slate-700">{sme.category}</strong> &bull; Merchant Rating: ★{" "}
-            {sme.rating.toFixed(1)}
+            {sme.rating.toFixed(1)} &bull; Settlement:{" "}
+            <span className="font-mono text-slate-700 font-semibold">{sme.mpesaPayoutNumber || "M-Pesa Pending"}</span>
           </p>
         </div>
 
@@ -276,15 +376,111 @@ export function SmeDashboardClient({ sme, categories, products: initialProducts,
             <ExternalLink className="w-3.5 h-3.5" />
             <span>Public Storefront</span>
           </Link>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-xs transition cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add New Product</span>
-          </button>
+          {sme.isVerified ? (
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add New Product</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => setShowKycModal(true)}
+              className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+            >
+              <Lock className="w-3.5 h-3.5" />
+              <span>Add Product (KYC Required)</span>
+            </button>
+          )}
         </div>
       </div>
+
+      {/* KYC Compliance Status Banner */}
+      {!sme.isVerified ? (
+        <div className="p-5 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50/80 border border-amber-200/80 rounded-2xl shadow-xs space-y-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-amber-500 text-white rounded-xl shadow-xs">
+                <Lock className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                  <span>KYC Compliance Verification Required</span>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-amber-200 text-amber-900">
+                    {sme.kycStatus === "REJECTED" ? "Action Required" : "Listing Locked"}
+                  </span>
+                </h3>
+                <p className="text-xs text-slate-600 mt-0.5">
+                  In accordance with Kenyan merchant trade regulations, complete your seller identity and business compliance to unlock product listing and active public catalog visibility.
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowKycModal(true)}
+              className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              <span>{sme.kycSubmittedAt ? "View / Update KYC Status" : "Complete KYC Verification"}</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1 text-[11px]">
+            <div className="p-2.5 bg-white/80 rounded-xl border border-amber-200/60 flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full ${sme.idNumber ? "bg-emerald-500" : "bg-amber-400"}`} />
+              <span className="text-slate-700">
+                National ID: <strong>{sme.idNumber ? "Provided" : "Pending"}</strong>
+              </span>
+            </div>
+            <div className="p-2.5 bg-white/80 rounded-xl border border-amber-200/60 flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full ${sme.taxPin ? "bg-emerald-500" : "bg-amber-400"}`} />
+              <span className="text-slate-700">
+                KRA PIN: <strong>{sme.taxPin ? "Provided" : "Pending"}</strong>
+              </span>
+            </div>
+            <div className="p-2.5 bg-white/80 rounded-xl border border-amber-200/60 flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full ${sme.mpesaPayoutNumber ? "bg-emerald-500" : "bg-amber-400"}`} />
+              <span className="text-slate-700">
+                M-Pesa Payout: <strong>{sme.mpesaPayoutNumber ? "Connected" : "Pending"}</strong>
+              </span>
+            </div>
+            <div className="p-2.5 bg-white/80 rounded-xl border border-amber-200/60 flex items-center gap-2">
+              <Clock className="w-3.5 h-3.5 text-amber-600" />
+              <span className="text-slate-700">
+                Review: <strong>12-24 Hours</strong>
+              </span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-emerald-600 text-white rounded-xl shadow-xs">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-emerald-950 text-xs sm:text-sm">
+                  Verified Kenyan Merchant (KYC Approved)
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 uppercase">
+                  Active Store
+                </span>
+              </div>
+              <p className="text-[11px] text-emerald-800 mt-0.5">
+                Full catalogue publishing and priority M-Pesa automated disbursements active.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setActiveTab("kyc")}
+            className="text-xs font-bold text-emerald-800 hover:text-emerald-950 hover:underline px-3 py-1 cursor-pointer hidden sm:block"
+          >
+            Compliance Details &rarr;
+          </button>
+        </div>
+      )}
 
       {/* Success Notification Toast */}
       {dispatchSuccessToast && (
@@ -368,6 +564,30 @@ export function SmeDashboardClient({ sme, categories, products: initialProducts,
             }`}
           >
             {orderList.length}
+          </span>
+        </button>
+        <button
+          onClick={() => setActiveTab("kyc")}
+          className={`px-4 py-2 text-xs font-bold rounded-lg transition cursor-pointer flex items-center gap-1.5 ${
+            activeTab === "kyc"
+              ? "bg-emerald-600 text-white"
+              : "text-slate-600 hover:bg-slate-100"
+          }`}
+        >
+          <ShieldCheck className="w-3.5 h-3.5" />
+          <span>KYC &amp; Verification</span>
+          <span
+            className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold uppercase ${
+              sme.isVerified
+                ? activeTab === "kyc"
+                  ? "bg-emerald-800 text-white"
+                  : "bg-emerald-100 text-emerald-800"
+                : activeTab === "kyc"
+                ? "bg-amber-800 text-white"
+                : "bg-amber-100 text-amber-900"
+            }`}
+          >
+            {sme.isVerified ? "Verified" : "Pending"}
           </span>
         </button>
       </div>
@@ -526,6 +746,323 @@ export function SmeDashboardClient({ sme, categories, products: initialProducts,
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 3: KYC & Regulatory Compliance Center */}
+      {activeTab === "kyc" && (
+        <div className="space-y-6">
+          {/* Status Header Banner */}
+          <div
+            className={`p-6 rounded-3xl border shadow-sm ${
+              sme.isVerified
+                ? "bg-gradient-to-br from-emerald-950 via-teal-900 to-slate-900 text-white border-emerald-800"
+                : "bg-gradient-to-br from-amber-950 via-slate-900 to-slate-950 text-white border-amber-800/80"
+            }`}
+          >
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div
+                  className={`p-3.5 rounded-2xl ${
+                    sme.isVerified ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"
+                  }`}
+                >
+                  <ShieldCheck className="w-8 h-8" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl font-black">
+                      {sme.isVerified
+                        ? "Merchant Identity & Business KYC Verified"
+                        : "Seller KYC Compliance Under Review"}
+                    </h2>
+                    <span
+                      className={`text-xs px-2.5 py-0.5 rounded-full font-bold uppercase ${
+                        sme.isVerified
+                          ? "bg-emerald-500/30 text-emerald-300"
+                          : "bg-amber-500/30 text-amber-300"
+                      }`}
+                    >
+                      {sme.isVerified ? "Approved" : sme.kycStatus || "Pending"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-300 mt-1 max-w-xl">
+                    {sme.isVerified
+                      ? "Your enterprise has been fully authenticated in compliance with Kenyan trade guidelines. Product listings and instant automated M-Pesa escrow settlements are fully unlocked."
+                      : "Your identification, KRA PIN, and enterprise credentials have been submitted and are being reviewed by the SokoLink compliance team (12-24 hrs turnaround). Product listings are temporarily locked until approved."}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowKycModal(true)}
+                className="px-5 py-2.5 bg-white text-slate-900 hover:bg-slate-100 font-bold text-xs rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer shrink-0"
+              >
+                <FileText className="w-4 h-4 text-emerald-600" />
+                <span>Update KYC Details</span>
+              </button>
+            </div>
+          </div>
+
+          {/* KYC Details Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Identity & Legal Information */}
+            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+              <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100 text-slate-900 font-bold text-sm">
+                <User className="w-4 h-4 text-emerald-600" />
+                <span>Authorized Representative &amp; Legal Identity</span>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div className="flex justify-between items-center py-1.5 border-b border-slate-50">
+                  <span className="text-slate-500">Document Type</span>
+                  <span className="font-semibold text-slate-800">
+                    {sme.idType === "PASSPORT"
+                      ? "Kenyan Passport"
+                      : sme.idType === "ALIEN_ID"
+                      ? "Alien ID / Work Permit"
+                      : "Kenyan National ID"}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center py-1.5 border-b border-slate-50">
+                  <span className="text-slate-500">National ID / Passport Number</span>
+                  <span className="font-mono font-bold text-slate-900">
+                    {sme.idNumber || <span className="text-amber-600 italic">Not provided</span>}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center py-1.5 border-b border-slate-50">
+                  <span className="text-slate-500">KRA Tax PIN</span>
+                  <span className="font-mono font-bold text-slate-900">
+                    {sme.taxPin || <span className="text-amber-600 italic">Not provided</span>}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center py-1.5">
+                  <span className="text-slate-500">Identity Scan Link</span>
+                  {sme.idDocUrl ? (
+                    <a
+                      href={sme.idDocUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-emerald-700 font-semibold hover:underline flex items-center gap-1"
+                    >
+                      <span>View Uploaded Scan</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  ) : (
+                    <span className="text-slate-400">None attached</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Enterprise & Settlement Information */}
+            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+              <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100 text-slate-900 font-bold text-sm">
+                <Building2 className="w-4 h-4 text-emerald-600" />
+                <span>Enterprise Registration &amp; Settlements</span>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div className="flex justify-between items-center py-1.5 border-b border-slate-50">
+                  <span className="text-slate-500">Business Registration Number</span>
+                  <span className="font-mono font-bold text-slate-900">
+                    {sme.registrationNumber || <span className="text-slate-400 italic">Optional / Sole Trader</span>}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center py-1.5 border-b border-slate-50">
+                  <span className="text-slate-500">M-Pesa Payout Account</span>
+                  <span className="font-mono font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded">
+                    {sme.mpesaPayoutNumber || "Phone Account"}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center py-1.5 border-b border-slate-50">
+                  <span className="text-slate-500">KRA PIN Certificate Link</span>
+                  {sme.kraPinDocUrl ? (
+                    <a
+                      href={sme.kraPinDocUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-emerald-700 font-semibold hover:underline flex items-center gap-1"
+                    >
+                      <span>View KRA Certificate</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  ) : (
+                    <span className="text-slate-400">None attached</span>
+                  )}
+                </div>
+
+                <div className="flex justify-between items-center py-1.5">
+                  <span className="text-slate-500">Submission Timestamp</span>
+                  <span className="text-slate-600">
+                    {sme.kycSubmittedAt ? formatDate(sme.kycSubmittedAt) : "Initial Onboarding"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Interactive KYC Submission & Update */}
+      {showKycModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-xl w-full max-h-[92vh] overflow-y-auto p-6 sm:p-8 shadow-2xl space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-emerald-50 text-emerald-700 rounded-xl">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-base">Seller KYC Compliance Verification</h3>
+                  <p className="text-xs text-slate-400">Required before listing products on SokoLink</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowKycModal(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Explanatory Notice */}
+            <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-950 flex items-start gap-2.5">
+              <Lock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <p className="text-[11px] leading-relaxed">
+                <strong>Why is KYC required?</strong> To protect buyers and ensure authentic multi-vendor commerce under Kenyan consumer protection guidelines, verified identification and KRA PIN are mandatory to publish products.
+              </p>
+            </div>
+
+            {kycError && (
+              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
+                <span>{kycError}</span>
+              </div>
+            )}
+
+            {kycSuccess && (
+              <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+                <span>{kycSuccess}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmitKyc} className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">ID Document Type *</label>
+                  <select
+                    value={kycIdType}
+                    onChange={(e) => setKycIdType(e.target.value as "NATIONAL_ID" | "PASSPORT" | "ALIEN_ID")}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-hidden cursor-pointer"
+                  >
+                    <option value="NATIONAL_ID">National ID</option>
+                    <option value="PASSPORT">Passport</option>
+                    <option value="ALIEN_ID">Alien ID</option>
+                  </select>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="font-bold text-slate-700 block mb-1">National ID / Passport Number *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. 12345678"
+                    value={kycIdNumber}
+                    onChange={(e) => setKycIdNumber(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-hidden font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">KRA Tax PIN *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. P051234567X"
+                    value={kycTaxPin}
+                    onChange={(e) => setKycTaxPin(e.target.value.toUpperCase())}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-hidden font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Business Registration / BN / PVT</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. BN-2024/0987"
+                    value={kycRegNumber}
+                    onChange={(e) => setKycRegNumber(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-hidden font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">M-Pesa Settlement / Payout Number *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="+254 712 345 678 or Till 654321"
+                  value={kycMpesaPayout}
+                  onChange={(e) => setKycMpesaPayout(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
+                />
+              </div>
+
+              <div className="space-y-2 pt-1">
+                <label className="font-bold text-slate-700 block">Verification Document Links (Cloud or Drive)</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <input
+                    type="url"
+                    placeholder="National ID Scan Link"
+                    value={kycIdDocUrl}
+                    onChange={(e) => setKycIdDocUrl(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
+                  />
+                  <input
+                    type="url"
+                    placeholder="KRA Certificate Scan Link"
+                    value={kycKraPinDocUrl}
+                    onChange={(e) => setKycKraPinDocUrl(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowKycModal(false)}
+                  className="px-4 py-2.5 border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold rounded-xl transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingKyc}
+                  className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md transition cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                >
+                  {submittingKyc ? (
+                    <span>Submitting KYC...</span>
+                  ) : (
+                    <>
+                      <ShieldCheck className="w-4 h-4" />
+                      <span>Submit for Verification</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

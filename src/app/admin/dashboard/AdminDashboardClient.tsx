@@ -30,6 +30,8 @@ import {
   Trash2,
   Bike,
   BadgeCheck,
+  FileText,
+  Eye,
 } from "lucide-react";
 
 interface SmeRow {
@@ -45,6 +47,18 @@ interface SmeRow {
   productsCount: number;
   ordersCount: number;
   createdAt: string;
+  idNumber?: string | null;
+  idType?: string | null;
+  idDocUrl?: string | null;
+  kraPin?: string | null;
+  kraPinDocUrl?: string | null;
+  businessRegistrationNumber?: string | null;
+  businessPermitUrl?: string | null;
+  mpesaPayoutNumber?: string | null;
+  kycStatus?: string | null;
+  kycSubmittedAt?: string | null;
+  kycVerifiedAt?: string | null;
+  kycNotes?: string | null;
 }
 
 interface RiderItem {
@@ -129,6 +143,7 @@ export function AdminDashboardClient({
   const [activeTab, setActiveTab] = useState<"dispatch" | "riders" | "smes" | "audit">("dispatch");
 
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [kycModalSme, setKycModalSme] = useState<SmeRow | null>(null);
 
   // Rider Management State
   const [isAddRiderOpen, setIsAddRiderOpen] = useState(false);
@@ -178,8 +193,38 @@ export function AdminDashboardClient({
       }
 
       setSmes((prev) =>
-        prev.map((s) => (s.id === smeId ? { ...s, status: nextStatus } : s))
+        prev.map((s) =>
+          s.id === smeId
+            ? {
+                ...s,
+                status: nextStatus,
+                kycStatus:
+                  nextStatus === "APPROVED"
+                    ? "APPROVED"
+                    : nextStatus === "REJECTED"
+                    ? "REJECTED"
+                    : s.kycStatus,
+              }
+            : s
+        )
       );
+
+      if (kycModalSme && kycModalSme.id === smeId) {
+        setKycModalSme((prev) =>
+          prev
+            ? {
+                ...prev,
+                status: nextStatus,
+                kycStatus:
+                  nextStatus === "APPROVED"
+                    ? "APPROVED"
+                    : nextStatus === "REJECTED"
+                    ? "REJECTED"
+                    : prev.kycStatus,
+              }
+            : null
+        );
+      }
     } catch {
       alert("Network error updating status");
     } finally {
@@ -849,77 +894,122 @@ export function AdminDashboardClient({
                   <th className="py-3.5 px-4">Owner / Contact</th>
                   <th className="py-3.5 px-4">Location</th>
                   <th className="py-3.5 px-4">Products</th>
-                  <th className="py-3.5 px-4">Status</th>
+                  <th className="py-3.5 px-4">Account Status</th>
+                  <th className="py-3.5 px-4">KYC Compliance</th>
                   <th className="py-3.5 px-4 text-right">Moderation Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
-                {smes.map((s) => (
-                  <tr key={s.id} className="hover:bg-slate-50 transition">
-                    <td className="py-3.5 px-4">
-                      <div className="font-bold text-slate-900">{s.businessName}</div>
-                      <Link
-                        href={`/sellers/${s.businessSlug}`}
-                        target="_blank"
-                        className="text-[10px] text-emerald-700 hover:underline flex items-center gap-0.5 mt-0.5"
-                      >
-                        <span>View Store</span>
-                        <ExternalLink className="w-2.5 h-2.5" />
-                      </Link>
-                    </td>
-                    <td className="py-3.5 px-4">{s.category}</td>
-                    <td className="py-3.5 px-4">
-                      <div>{s.ownerName}</div>
-                      <div className="text-[10px] text-slate-400 font-mono">{s.ownerEmail}</div>
-                    </td>
-                    <td className="py-3.5 px-4">{s.location}</td>
-                    <td className="py-3.5 px-4 font-bold">{s.productsCount}</td>
-                    <td className="py-3.5 px-4">
-                      <span
-                        className={`inline-block px-2.5 py-0.5 rounded-full font-bold text-[10px] uppercase ${
-                          s.status === "APPROVED"
-                            ? "bg-emerald-100 text-emerald-800"
-                            : s.status === "PENDING"
-                            ? "bg-amber-100 text-amber-800"
-                            : "bg-red-100 text-red-800"
-                        }`}
-                      >
-                        {s.status}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        {s.status !== "APPROVED" && (
-                          <button
-                            onClick={() => handleUpdateStatus(s.id, "APPROVED")}
-                            disabled={loadingId === s.id}
-                            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold text-[10px] cursor-pointer"
+                {smes.map((s) => {
+                  const isKycApproved = s.kycStatus === "APPROVED" || s.status === "APPROVED";
+                  const isKycPending = s.kycStatus === "PENDING";
+                  const hasKycData = !!(s.idNumber || s.kraPin || s.businessRegistrationNumber);
+
+                  return (
+                    <tr key={s.id} className="hover:bg-slate-50 transition">
+                      <td className="py-3.5 px-4">
+                        <div className="font-bold text-slate-900">{s.businessName}</div>
+                        <Link
+                          href={`/sellers/${s.businessSlug}`}
+                          target="_blank"
+                          className="text-[10px] text-emerald-700 hover:underline flex items-center gap-0.5 mt-0.5"
+                        >
+                          <span>View Store</span>
+                          <ExternalLink className="w-2.5 h-2.5" />
+                        </Link>
+                      </td>
+                      <td className="py-3.5 px-4">{s.category}</td>
+                      <td className="py-3.5 px-4">
+                        <div>{s.ownerName}</div>
+                        <div className="text-[10px] text-slate-400 font-mono">{s.ownerEmail}</div>
+                      </td>
+                      <td className="py-3.5 px-4">{s.location}</td>
+                      <td className="py-3.5 px-4 font-bold">{s.productsCount}</td>
+                      <td className="py-3.5 px-4">
+                        <span
+                          className={`inline-block px-2.5 py-0.5 rounded-full font-bold text-[10px] uppercase ${
+                            s.status === "APPROVED"
+                              ? "bg-emerald-100 text-emerald-800"
+                              : s.status === "PENDING"
+                              ? "bg-amber-100 text-amber-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {s.status}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <div className="flex flex-col gap-1 items-start">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-bold text-[10px] uppercase ${
+                              isKycApproved
+                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                : isKycPending
+                                ? "bg-amber-50 text-amber-700 border border-amber-200"
+                                : "bg-slate-100 text-slate-600 border border-slate-200"
+                            }`}
                           >
-                            Approve
-                          </button>
-                        )}
-                        {s.status !== "REJECTED" && (
-                          <button
-                            onClick={() => handleUpdateStatus(s.id, "REJECTED")}
-                            disabled={loadingId === s.id}
-                            className="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded font-bold text-[10px] cursor-pointer"
-                          >
-                            Reject
-                          </button>
-                        )}
-                        {s.status === "APPROVED" && (
-                          <button
-                            onClick={() => handleUpdateStatus(s.id, "SUSPENDED")}
-                            disabled={loadingId === s.id}
-                            className="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded font-bold text-[10px] cursor-pointer"
-                          >
-                            Suspend
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                            {isKycApproved ? (
+                              <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
+                            ) : (
+                              <Clock className="w-2.5 h-2.5 text-amber-600" />
+                            )}
+                            {isKycApproved ? "Verified KYC" : (s.kycStatus || "Not Submitted")}
+                          </span>
+                          {hasKycData && (
+                            <button
+                              onClick={() => setKycModalSme(s)}
+                              className="text-[10px] font-semibold text-purple-700 hover:text-purple-800 flex items-center gap-0.5 cursor-pointer"
+                            >
+                              <Eye className="w-2.5 h-2.5" />
+                              <span>View Dossier</span>
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {hasKycData && (
+                            <button
+                              onClick={() => setKycModalSme(s)}
+                              className="px-2 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded font-bold text-[10px] cursor-pointer flex items-center gap-1"
+                            >
+                              <FileText className="w-3 h-3" />
+                              <span>Review KYC</span>
+                            </button>
+                          )}
+                          {s.status !== "APPROVED" && (
+                            <button
+                              onClick={() => handleUpdateStatus(s.id, "APPROVED")}
+                              disabled={loadingId === s.id}
+                              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold text-[10px] cursor-pointer"
+                            >
+                              Approve
+                            </button>
+                          )}
+                          {s.status !== "REJECTED" && (
+                            <button
+                              onClick={() => handleUpdateStatus(s.id, "REJECTED")}
+                              disabled={loadingId === s.id}
+                              className="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded font-bold text-[10px] cursor-pointer"
+                            >
+                              Reject
+                            </button>
+                          )}
+                          {s.status === "APPROVED" && (
+                            <button
+                              onClick={() => handleUpdateStatus(s.id, "SUSPENDED")}
+                              disabled={loadingId === s.id}
+                              className="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded font-bold text-[10px] cursor-pointer"
+                            >
+                              Suspend
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -1287,6 +1377,146 @@ export function AdminDashboardClient({
               >
                 {deletingRiderId === confirmDeleteModal.id ? "Removing..." : "Yes, Remove Courier"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* MODAL: KYC DOSSIER REVIEW */}
+      {kycModalSme && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm">KYC & Compliance Dossier</h3>
+                  <p className="text-[11px] text-slate-500">{kycModalSme.businessName}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setKycModalSme(null)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase font-semibold">Account Status</span>
+                  <div className="font-bold text-slate-800 mt-0.5">{kycModalSme.status}</div>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase font-semibold">KYC Verification</span>
+                  <div className="font-bold text-slate-800 mt-0.5">{kycModalSme.kycStatus || "PENDING"}</div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-2.5 rounded-lg border border-slate-100 bg-white">
+                  <div>
+                    <div className="text-[10px] text-slate-400 uppercase font-semibold">
+                      {kycModalSme.idType || "National ID / Passport"}
+                    </div>
+                    <div className="font-mono font-bold text-slate-900 mt-0.5">
+                      {kycModalSme.idNumber || "Not Provided"}
+                    </div>
+                  </div>
+                  {kycModalSme.idDocUrl && (
+                    <a
+                      href={kycModalSme.idDocUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-md font-semibold text-[11px] flex items-center gap-1"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      <span>View Scan</span>
+                    </a>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between p-2.5 rounded-lg border border-slate-100 bg-white">
+                  <div>
+                    <div className="text-[10px] text-slate-400 uppercase font-semibold">KRA Tax PIN</div>
+                    <div className="font-mono font-bold text-slate-900 mt-0.5">
+                      {kycModalSme.kraPin || "Not Provided"}
+                    </div>
+                  </div>
+                  {kycModalSme.kraPinDocUrl && (
+                    <a
+                      href={kycModalSme.kraPinDocUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-md font-semibold text-[11px] flex items-center gap-1"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      <span>View PIN Cert</span>
+                    </a>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between p-2.5 rounded-lg border border-slate-100 bg-white">
+                  <div>
+                    <div className="text-[10px] text-slate-400 uppercase font-semibold">Business Registration / Permit</div>
+                    <div className="font-mono font-bold text-slate-900 mt-0.5">
+                      {kycModalSme.businessRegistrationNumber || "Not Provided"}
+                    </div>
+                  </div>
+                  {kycModalSme.businessPermitUrl && (
+                    <a
+                      href={kycModalSme.businessPermitUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-md font-semibold text-[11px] flex items-center gap-1"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      <span>View Permit</span>
+                    </a>
+                  )}
+                </div>
+
+                <div className="p-2.5 rounded-lg border border-slate-100 bg-white">
+                  <div className="text-[10px] text-slate-400 uppercase font-semibold">Settlement / Payout M-Pesa Number</div>
+                  <div className="font-mono font-bold text-slate-900 mt-0.5">
+                    {kycModalSme.mpesaPayoutNumber || kycModalSme.ownerPhone || "Not Configured"}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setKycModalSme(null)}
+                className="px-3.5 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-semibold cursor-pointer hover:bg-slate-50"
+              >
+                Close
+              </button>
+              <div className="flex items-center gap-2">
+                {kycModalSme.status !== "REJECTED" && (
+                  <button
+                    type="button"
+                    disabled={loadingId === kycModalSme.id}
+                    onClick={() => handleUpdateStatus(kycModalSme.id, "REJECTED")}
+                    className="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-xl text-xs font-bold transition cursor-pointer"
+                  >
+                    Reject KYC
+                  </button>
+                )}
+                {kycModalSme.status !== "APPROVED" && (
+                  <button
+                    type="button"
+                    disabled={loadingId === kycModalSme.id}
+                    onClick={() => handleUpdateStatus(kycModalSme.id, "APPROVED")}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition cursor-pointer shadow-xs"
+                  >
+                    Approve KYC & Enable Selling
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

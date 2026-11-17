@@ -173,6 +173,16 @@ model SMEProfile {
   logoUrl            String?
   bannerUrl          String?
   verificationDocUrl String?
+  idNumber           String?
+  idType             String?      @default("NATIONAL_ID")
+  idDocUrl           String?
+  kraPinDocUrl       String?
+  businessPermitUrl  String?
+  mpesaPayoutNumber  String?
+  kycStatus          String?      @default("PENDING")
+  kycSubmittedAt     DateTime?
+  kycVerifiedAt      DateTime?
+  kycNotes           String?
   status             SmeStatus    @default(PENDING)
   commissionRate     Decimal      @default(5.00) @db.Decimal(5, 2)
   isFeatured         Boolean      @default(false)

@@ -38,6 +38,29 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized. SME account required." }, { status: 403 });
     }
 
+    // Enforce KYC verification check: Seller must have completed and approved KYC before posting products
+    const sme = await prisma.sMEProfile.findUnique({
+      where: { id: session.smeId },
+      select: { status: true, kycStatus: true, businessName: true },
+    });
+
+    if (!sme) {
+      return NextResponse.json({ error: "SME business profile not found." }, { status: 404 });
+    }
+
+    const isVerified = sme.status === "APPROVED" || sme.kycStatus === "APPROVED";
+    if (!isVerified) {
+      return NextResponse.json(
+        {
+          error:
+            "KYC Verification Required: You must complete and have your KYC compliance approved before you can list products on SokoLink.",
+          kycStatus: sme.kycStatus || "PENDING",
+          requiresKyc: true,
+        },
+        { status: 403 }
+      );
+    }
+
     const body = await req.json();
     const {
       name,

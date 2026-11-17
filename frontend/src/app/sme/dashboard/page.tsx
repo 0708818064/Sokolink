@@ -118,6 +118,20 @@ export default async function SmeDashboardPage() {
           totalRevenue,
           pendingOrdersCount,
           lowStockCount,
+          // KYC Compliance
+          kycStatus: sme.kycStatus || "PENDING",
+          idNumber: sme.idNumber,
+          idType: sme.idType || "NATIONAL_ID",
+          taxPin: sme.taxPin,
+          registrationNumber: sme.registrationNumber,
+          mpesaPayoutNumber: sme.mpesaPayoutNumber,
+          idDocUrl: sme.idDocUrl,
+          kraPinDocUrl: sme.kraPinDocUrl,
+          businessPermitUrl: sme.businessPermitUrl,
+          kycSubmittedAt: sme.kycSubmittedAt ? sme.kycSubmittedAt.toISOString() : null,
+          kycVerifiedAt: sme.kycVerifiedAt ? sme.kycVerifiedAt.toISOString() : null,
+          kycNotes: sme.kycNotes,
+          isVerified: sme.status === "APPROVED" || sme.kycStatus === "APPROVED",
         }}
         categories={categories}
         products={formattedProducts}

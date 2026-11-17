@@ -45,7 +45,7 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    const { smeId, status } = await req.json();
+    const { smeId, status, kycNotes } = await req.json();
 
     if (!smeId || !status) {
       return NextResponse.json({ error: "SME ID and status are required" }, { status: 400 });
@@ -61,11 +61,18 @@ export async function PATCH(req: Request) {
     }
 
     const userStatus = status === SmeStatus.APPROVED ? UserStatus.ACTIVE : status === SmeStatus.SUSPENDED ? UserStatus.SUSPENDED : UserStatus.PENDING;
+    const kycStatus = status === SmeStatus.APPROVED ? "APPROVED" : status === SmeStatus.REJECTED ? "REJECTED" : "PENDING";
+    const kycVerifiedAt = status === SmeStatus.APPROVED ? new Date() : null;
 
     await prisma.$transaction([
       prisma.sMEProfile.update({
         where: { id: smeId },
-        data: { status },
+        data: {
+          status,
+          kycStatus,
+          kycVerifiedAt,
+          kycNotes: kycNotes || undefined,
+        },
       }),
       prisma.user.update({
         where: { id: sme.userId },

@@ -48,3 +48,5 @@ yarn-error.log*
 # Generated Prisma Client in src (keep migrations and schema)
 /src/generated/prisma/
 .neon
+android-native-build/bin/
+*.apk

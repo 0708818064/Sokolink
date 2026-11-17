@@ -10,7 +10,7 @@
     "test:backend": "npm --prefix backend run test:workflows",
     "seed:backend": "npm --prefix backend run seed",
     "dev": "next dev -H 0.0.0.0 -p 3000",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
     "seed": "tsx prisma/seed.ts",

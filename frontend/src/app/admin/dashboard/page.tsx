@@ -89,6 +89,18 @@ export default async function AdminDashboardPage() {
     productsCount: s._count.products,
     ordersCount: s._count.sellerOrders,
     createdAt: s.createdAt.toISOString(),
+    idNumber: s.idNumber,
+    idType: s.idType,
+    idDocUrl: s.idDocUrl,
+    kraPin: s.taxPin,
+    kraPinDocUrl: s.kraPinDocUrl,
+    businessRegistrationNumber: s.registrationNumber,
+    businessPermitUrl: s.businessPermitUrl,
+    mpesaPayoutNumber: s.mpesaPayoutNumber,
+    kycStatus: s.kycStatus,
+    kycSubmittedAt: s.kycSubmittedAt ? s.kycSubmittedAt.toISOString() : null,
+    kycVerifiedAt: s.kycVerifiedAt ? s.kycVerifiedAt.toISOString() : null,
+    kycNotes: s.kycNotes,
   }));
 
   const formattedDeliveries = allDeliveries.map((d) => ({
