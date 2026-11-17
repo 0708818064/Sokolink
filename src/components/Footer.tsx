@@ -73,6 +73,7 @@ export function Footer() {
               <li><Link href="/track/demo" className="hover:text-emerald-400 transition">Track an Order</Link></li>
               <li><Link href="/help#returns" className="hover:text-emerald-400 transition">Returns &amp; Refunds</Link></li>
               <li><Link href="/help#mpesa" className="hover:text-emerald-400 transition">M-Pesa Payment Guide</Link></li>
+              <li><a href="/downloads/sokolink.apk" download="sokolink.apk" className="text-slate-400 hover:text-emerald-400 transition flex items-center gap-1"><span>Android App (APK)</span></a></li>
             </ul>
           </div>
 
