@@ -3,12 +3,30 @@
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
+function cleanConnectionString(raw?: string): string {
+  if (!raw) return "";
+  let res = raw.trim();
+  if (res.toLowerCase().startsWith("psql ")) {
+    res = res.slice(5).trim();
+  }
+  if (
+    (res.startsWith('"') && res.endsWith('"')) ||
+    (res.startsWith("'") && res.endsWith("'"))
+  ) {
+    res = res.slice(1, -1).trim();
+  }
+  return res;
+}
+
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DIRECT_URL"] || process.env["DATABASE_URL_UNPOOLED"] || process.env["DATABASE_URL"],
+    url:
+      cleanConnectionString(process.env["DIRECT_URL"]) ||
+      cleanConnectionString(process.env["DATABASE_URL_UNPOOLED"]) ||
+      cleanConnectionString(process.env["DATABASE_URL"]),
   },
 });
