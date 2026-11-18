@@ -23,7 +23,6 @@ public final class R {
         public static final int sokolink_icon_512=0x7f020001;
     }
     public static final class id {
-        public static final int btnChangeServer=0x7f070004;
         public static final int btnRetry=0x7f070003;
         public static final int errorLayout=0x7f070002;
         public static final int progressBar=0x7f070001;
