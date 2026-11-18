@@ -34,7 +34,7 @@ const nextConfig: NextConfig = {
     if (!backendUrl) return [];
     const normalized = backendUrl.replace(/\/+$/, "");
     return {
-      beforeFiles: [
+      fallback: [
         {
           source: "/api/:path*",
           destination: `${normalized}/api/:path*`,

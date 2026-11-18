@@ -14,8 +14,25 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+function cleanConnectionString(raw?: string): string {
+  if (!raw) return "";
+  let res = raw.trim();
+  if (res.toLowerCase().startsWith("psql ")) {
+    res = res.slice(5).trim();
+  }
+  if (
+    (res.startsWith('"') && res.endsWith('"')) ||
+    (res.startsWith("'") && res.endsWith("'"))
+  ) {
+    res = res.slice(1, -1).trim();
+  }
+  return res;
+}
+
 let connectionString =
-  process.env.DATABASE_URL || "postgresql://wiseman:sokolink_pass@localhost:5432/sokolink?schema=public";
+  cleanConnectionString(process.env.DATABASE_URL) ||
+  cleanConnectionString(process.env.DIRECT_URL) ||
+  "postgresql://wiseman:sokolink_pass@localhost:5432/sokolink?schema=public";
 
 if (connectionString.includes("sslmode=require") && !connectionString.includes("uselibpqcompat=")) {
   connectionString += connectionString.includes("?") ? "&uselibpqcompat=true" : "?uselibpqcompat=true";
