@@ -1,27 +1,18 @@
 package ke.co.sokolink.app;
 
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Bitmap;
-import android.net.Uri;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.View;
-import android.webkit.GeolocationPermissions;
-import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
-import android.webkit.WebViewClient;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-public class MainActivity extends Activity {
+public class MainActivity extends Activity implements View.OnClickListener {
 
     private static final String PREFS_NAME = "SokoLinkPrefs";
     private static final String KEY_SERVER_URL = "server_url";
@@ -46,14 +37,9 @@ public class MainActivity extends Activity {
 
         configureWebView();
 
-        btnRetry.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                errorLayout.setVisibility(View.GONE);
-                webView.setVisibility(View.VISIBLE);
-                webView.loadUrl(DEFAULT_URL);
-            }
-        });
+        if (btnRetry != null) {
+            btnRetry.setOnClickListener(this);
+        }
 
         // Clear any old legacy LAN/local IP from preferences so it always connects to production
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
@@ -61,6 +47,15 @@ public class MainActivity extends Activity {
 
         // Connect automatically to the production SokoLink Vercel deployment
         webView.loadUrl(DEFAULT_URL);
+    }
+
+    @Override
+    public void onClick(View v) {
+        if (v.getId() == R.id.btnRetry) {
+            errorLayout.setVisibility(View.GONE);
+            webView.setVisibility(View.VISIBLE);
+            webView.loadUrl(DEFAULT_URL);
+        }
     }
 
     private void configureWebView() {
@@ -72,72 +67,11 @@ public class MainActivity extends Activity {
         settings.setLoadWithOverviewMode(true);
         settings.setGeolocationEnabled(true);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
-        settings.setUserAgentString(settings.getUserAgentString() + " SokoLinkAndroid/1.1");
+        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
+        settings.setUserAgentString(settings.getUserAgentString() + " SokoLinkAndroid/1.2");
 
-        webView.setWebChromeClient(new WebChromeClient() {
-            @Override
-            public void onProgressChanged(WebView view, int newProgress) {
-                if (newProgress < 100) {
-                    progressBar.setVisibility(View.VISIBLE);
-                    progressBar.setProgress(newProgress);
-                } else {
-                    progressBar.setVisibility(View.GONE);
-                }
-            }
-
-            @Override
-            public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback) {
-                callback.invoke(origin, true, false);
-            }
-        });
-
-        webView.setWebViewClient(new WebViewClient() {
-            @Override
-            public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                if (url == null) return false;
-
-                // Handle tel: links (calling couriers/customer care)
-                if (url.startsWith("tel:")) {
-                    Intent intent = new Intent(Intent.ACTION_DIAL, Uri.parse(url));
-                    startActivity(intent);
-                    return true;
-                }
-
-                // Handle sms: links
-                if (url.startsWith("sms:")) {
-                    Intent intent = new Intent(Intent.ACTION_SENDTO, Uri.parse(url));
-                    startActivity(intent);
-                    return true;
-                }
-
-                // Handle WhatsApp links
-                if (url.startsWith("https://wa.me/") || url.startsWith("whatsapp:")) {
-                    try {
-                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                        startActivity(intent);
-                        return true;
-                    } catch (Exception e) {
-                        // Fallback to webview
-                    }
-                }
-
-                // Keep internal SokoLink navigations inside WebView
-                return false;
-            }
-
-            @Override
-            public void onPageStarted(WebView view, String url, Bitmap favicon) {
-                super.onPageStarted(view, url, favicon);
-                errorLayout.setVisibility(View.GONE);
-            }
-
-            @Override
-            public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
-                super.onReceivedError(view, errorCode, description, failingUrl);
-                webView.setVisibility(View.GONE);
-                errorLayout.setVisibility(View.VISIBLE);
-            }
-        });
+        webView.setWebChromeClient(new SokoWebChromeClient(progressBar));
+        webView.setWebViewClient(new SokoWebViewClient(this, errorLayout));
     }
 
     @Override
