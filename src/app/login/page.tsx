@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import {
   Lock,
@@ -15,8 +16,11 @@ import {
   EyeOff,
 } from "lucide-react";
 
-export default function LoginPage() {
+function LoginContent() {
   const { login } = useAuth();
+  const searchParams = useSearchParams();
+  const redirectParam = searchParams.get("redirect");
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -34,7 +38,8 @@ export default function LoginPage() {
     setLoading(false);
 
     if (res.success) {
-      if (res.role === "ADMIN") window.location.href = "/admin/dashboard";
+      if (redirectParam) window.location.href = redirectParam;
+      else if (res.role === "ADMIN") window.location.href = "/admin/dashboard";
       else if (res.role === "SME") window.location.href = "/sme/dashboard";
       else if (res.role === "DELIVERY") window.location.href = "/delivery/dashboard";
       else window.location.href = "/customer/dashboard";
@@ -69,46 +74,45 @@ export default function LoginPage() {
               setActiveTab("CUSTOMER");
               setError("");
             }}
-            className={`py-2 rounded-lg transition cursor-pointer flex items-center justify-center gap-2 ${
+            className={`py-2 rounded-lg transition text-center cursor-pointer ${
               activeTab === "CUSTOMER"
                 ? "bg-white text-slate-900 shadow-xs font-bold"
-                : "text-slate-600 hover:text-slate-900"
+                : "text-slate-500 hover:text-slate-900"
             }`}
           >
-            <User className="w-4 h-4 text-emerald-600" />
-            Shopper / Customer
+            Buyer / Shopper
           </button>
-
           <button
             type="button"
             onClick={() => {
               setActiveTab("SME");
               setError("");
             }}
-            className={`py-2 rounded-lg transition cursor-pointer flex items-center justify-center gap-2 ${
+            className={`py-2 rounded-lg transition text-center cursor-pointer ${
               activeTab === "SME"
                 ? "bg-white text-slate-900 shadow-xs font-bold"
-                : "text-slate-600 hover:text-slate-900"
+                : "text-slate-500 hover:text-slate-900"
             }`}
           >
-            <Store className="w-4 h-4 text-emerald-600" />
-            SME Business Owner
+            SME Seller Portal
           </button>
         </div>
 
-        {/* Error Alert */}
         {error && (
-          <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs flex items-start gap-2.5 shadow-2xs">
-            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+          <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
-        {/* Sign In Form */}
-        <form onSubmit={handleLogin} className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        {/* Login Form */}
+        <form
+          onSubmit={handleLogin}
+          className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-4"
+        >
           <div>
             <label className="text-xs font-semibold text-slate-700 block mb-1.5">
-              Registered Email Address
+              Email Address
             </label>
             <div className="relative">
               <input
@@ -116,17 +120,17 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="e.g. name@company.co.ke"
-                className="w-full bg-slate-50 border border-slate-300 focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-200 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-900 transition outline-none"
+                placeholder={activeTab === "CUSTOMER" ? "customer@example.com" : "vendor@sme.co.ke"}
+                className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 transition"
               />
-              <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+              <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
             </div>
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-xs font-semibold text-slate-700">Password</label>
-              <Link href="/help#password-reset" className="text-[11px] text-emerald-700 hover:underline font-medium">
+              <Link href="/help" className="text-[11px] text-emerald-700 hover:underline">
                 Forgot password?
               </Link>
             </div>
@@ -137,31 +141,30 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••••"
-                className="w-full bg-slate-50 border border-slate-300 focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-200 rounded-xl pl-9 pr-10 py-2.5 text-xs text-slate-900 transition outline-none"
+                className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-10 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 transition"
               />
-              <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+              <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 cursor-pointer"
-                title={showPassword ? "Hide password" : "Show password"}
+                className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600 cursor-pointer"
+                aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-xs text-slate-600 pt-1">
-            <label className="flex items-center gap-2 cursor-pointer select-none">
+          <div className="flex items-center justify-between text-xs pt-1">
+            <label className="flex items-center gap-2 text-slate-600 cursor-pointer">
               <input
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
                 className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
               />
-              <span>Remember this session</span>
+              <span>Remember me on this device</span>
             </label>
-            <span className="text-[11px] text-slate-400 font-mono">7-day secure token</span>
           </div>
 
           <button
@@ -185,7 +188,11 @@ export default function LoginPage() {
           <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
             <span>Don&apos;t have an account yet?</span>
             <Link
-              href={activeTab === "SME" ? "/register?role=sme" : "/register?role=customer"}
+              href={
+                activeTab === "SME"
+                  ? `/register?role=sme${redirectParam ? `&redirect=${encodeURIComponent(redirectParam)}` : ""}`
+                  : `/register?role=customer${redirectParam ? `&redirect=${encodeURIComponent(redirectParam)}` : ""}`
+              }
               className="text-emerald-700 font-bold hover:underline"
             >
               Register as {activeTab === "SME" ? "Merchant" : "Customer"} &rarr;
@@ -200,5 +207,19 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-[80vh] flex items-center justify-center text-xs text-slate-400">
+          Loading login portal...
+        </div>
+      }
+    >
+      <LoginContent />
+    </Suspense>
   );
 }

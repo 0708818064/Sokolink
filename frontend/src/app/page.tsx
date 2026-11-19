@@ -122,65 +122,65 @@ export default async function HomePage() {
   };
 
   return (
-    <div className="space-y-12 pb-16">
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-emerald-900 via-teal-900 to-slate-900 text-white overflow-hidden py-16 md:py-24">
+    <div className="space-y-6 sm:space-y-12 pb-12 sm:pb-16">
+      {/* Hero Section — Mobile Optimized for Android screens */}
+      <section className="relative bg-gradient-to-br from-emerald-900 via-teal-900 to-slate-900 text-white overflow-hidden py-6 sm:py-10 md:py-20">
         {/* Background pattern */}
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:16px_16px]"></div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            <div className="lg:col-span-7 space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-full text-xs font-semibold backdrop-blur-xs border border-emerald-500/30">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12 items-center">
+            <div className="lg:col-span-7 space-y-3 sm:space-y-6">
+              <div className="inline-flex items-center gap-2 px-2.5 py-0.5 sm:px-3 sm:py-1 bg-emerald-500/20 text-emerald-300 rounded-full text-[11px] sm:text-xs font-semibold backdrop-blur-xs border border-emerald-500/30">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                Official Kenyan SME Digital Marketplace
+                Official Kenyan SME Marketplace
               </div>
 
-              <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
+              <h1 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight leading-tight">
                 Shop Directly from Kenya&apos;s Best <span className="text-emerald-400">Local SMEs</span>
               </h1>
 
-              <p className="text-slate-300 text-base sm:text-lg leading-relaxed max-w-2xl">
-                Discover high-quality Kenyan electronics, authentic Maasai crafts, organic Limuru farm produce, and bespoke fashion. Pay seamlessly via M-Pesa with guaranteed delivery to your doorstep.
+              <p className="text-slate-300 text-xs sm:text-base leading-relaxed max-w-2xl line-clamp-2 sm:line-clamp-none">
+                Discover authentic Kenyan crafts, electronics, fresh produce, and fashion with instant Safaricom M-Pesa escrow and fast doorstep delivery.
               </p>
 
-              <div className="flex flex-wrap gap-4 pt-2">
+              <div className="flex flex-row flex-wrap gap-2.5 pt-1">
                 <Link
                   href="/products"
-                  className="px-6 py-3.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl shadow-lg transition flex items-center gap-2"
+                  className="px-4 py-2.5 sm:px-6 sm:py-3.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl shadow-md transition flex items-center gap-1.5 text-xs sm:text-sm"
                 >
-                  <span>Explore Catalogue</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <span>Explore Products</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
 
                 <Link
                   href="/register?role=sme"
-                  className="px-6 py-3.5 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl backdrop-blur-xs border border-white/20 transition flex items-center gap-2"
+                  className="px-4 py-2.5 sm:px-6 sm:py-3.5 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl backdrop-blur-xs border border-white/20 transition flex items-center gap-1.5 text-xs sm:text-sm"
                 >
-                  <Store className="w-4 h-4" />
-                  <span>Register Your Business</span>
+                  <Store className="w-3.5 h-3.5" />
+                  <span>Sell on SokoLink</span>
                 </Link>
               </div>
 
-              {/* Kenyan trust metric highlights */}
-              <div className="grid grid-cols-3 gap-4 pt-6 border-t border-white/10 text-xs">
+              {/* Kenyan trust metric highlights - Visible on tablet/desktop, compact single-line on mobile */}
+              <div className="hidden sm:grid grid-cols-3 gap-4 pt-4 border-t border-white/10 text-xs">
                 <div>
-                  <div className="text-xl font-black text-emerald-400">100%</div>
+                  <div className="text-lg sm:text-xl font-black text-emerald-400">100%</div>
                   <div className="text-slate-400">Kenyan SMEs</div>
                 </div>
                 <div>
-                  <div className="text-xl font-black text-amber-400">Instant</div>
+                  <div className="text-lg sm:text-xl font-black text-amber-400">Instant</div>
                   <div className="text-slate-400">M-Pesa STK Push</div>
                 </div>
                 <div>
-                  <div className="text-xl font-black text-emerald-400">OTP Code</div>
+                  <div className="text-lg sm:text-xl font-black text-emerald-400">OTP Code</div>
                   <div className="text-slate-400">Verified Delivery</div>
                 </div>
               </div>
             </div>
 
-            {/* Hero Promo Banner Card */}
-            <div className="lg:col-span-5">
+            {/* Hero Promo Banner Card - Desktop & Tablet only to prioritize product visibility on mobile */}
+            <div className="hidden lg:block lg:col-span-5">
               <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/15 p-6 shadow-2xl space-y-6">
                 <div className="flex items-center justify-between">
                   <span className="text-xs uppercase tracking-wider font-bold text-amber-300 flex items-center gap-1.5">
@@ -223,12 +223,12 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Categories Section */}
+      {/* Categories Section — Horizontal scroll on mobile for compact footprint */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-3 sm:mb-6">
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-slate-900">Explore by Category</h2>
-            <p className="text-xs sm:text-sm text-slate-500">Handpicked sectors driving the Kenyan economy</p>
+            <h2 className="text-lg sm:text-2xl font-bold text-slate-900">Explore by Category</h2>
+            <p className="text-[11px] sm:text-sm text-slate-500">Handpicked sectors driving the Kenyan economy</p>
           </div>
           <Link
             href="/products"
@@ -239,31 +239,31 @@ export default async function HomePage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="flex overflow-x-auto gap-3 pb-2 scrollbar-none sm:grid sm:grid-cols-3 lg:grid-cols-6 sm:gap-4 -mx-4 px-4 sm:mx-0 sm:px-0">
           {categories.map((cat) => (
             <Link
               key={cat.id}
               href={`/products?category=${cat.slug}`}
-              className="group bg-white p-4 rounded-xl border border-slate-200 hover:border-emerald-500 hover:shadow-md transition text-center flex flex-col items-center justify-center space-y-2"
+              className="group bg-white p-3 sm:p-4 rounded-xl border border-slate-200 hover:border-emerald-500 hover:shadow-md transition text-center flex flex-col items-center justify-center space-y-1.5 shrink-0 min-w-[120px] sm:min-w-0 sm:shrink"
             >
-              <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-slate-50 flex items-center justify-center group-hover:scale-110 transition-transform">
                 {getCategoryIcon(cat.icon)}
               </div>
-              <h3 className="font-semibold text-xs sm:text-sm text-slate-800 group-hover:text-emerald-700">
+              <h3 className="font-semibold text-[11px] sm:text-sm text-slate-800 group-hover:text-emerald-700 line-clamp-1">
                 {cat.name}
               </h3>
-              <span className="text-[11px] text-slate-400">{cat._count.products} products</span>
+              <span className="text-[10px] sm:text-[11px] text-slate-400">{cat._count.products} products</span>
             </Link>
           ))}
         </div>
       </section>
 
-      {/* Featured Products */}
+      {/* Featured Products — Positioned high for immediate mobile visibility */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-slate-900">Featured SME Products</h2>
-            <p className="text-xs sm:text-sm text-slate-500">Top-rated items from verified local entrepreneurs</p>
+            <h2 className="text-lg sm:text-2xl font-bold text-slate-900">Featured SME Products</h2>
+            <p className="text-[11px] sm:text-sm text-slate-500">Top-rated items from verified local entrepreneurs</p>
           </div>
           <Link
             href="/products"

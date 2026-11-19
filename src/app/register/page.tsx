@@ -143,8 +143,11 @@ function RegisterContent() {
           : "Welcome to SokoLink! Setting up your shopper account..."
       );
 
+      const redirectUrl = searchParams.get("redirect");
       setTimeout(() => {
-        if (role === "SME") {
+        if (redirectUrl) {
+          window.location.href = redirectUrl;
+        } else if (role === "SME") {
           window.location.href = "/sme/dashboard";
         } else {
           window.location.href = "/customer/dashboard";

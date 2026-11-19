@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, Suspense } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
@@ -12,6 +13,7 @@ import {
   ArrowRight,
   AlertCircle,
   Store,
+  UserCheck,
 } from "lucide-react";
 
 function CheckoutContent() {
@@ -150,6 +152,23 @@ function CheckoutContent() {
           Complete your delivery details and pay securely via Safaricom M-Pesa
         </p>
       </div>
+
+      {!user && (
+        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-emerald-950 shadow-xs">
+          <div className="flex items-center gap-2.5">
+            <UserCheck className="w-5 h-5 text-emerald-600 shrink-0" />
+            <div>
+              <strong>Checking out as a Guest?</strong> Create a free buyer account to save your delivery location and track orders live.
+            </div>
+          </div>
+          <Link
+            href={`/register?role=customer&redirect=${encodeURIComponent("/checkout")}`}
+            className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shrink-0 transition"
+          >
+            Create Buyer Account &rarr;
+          </Link>
+        </div>
+      )}
 
       {error && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs flex items-center gap-2">

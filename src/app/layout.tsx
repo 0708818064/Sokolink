@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
@@ -6,6 +6,7 @@ import { CartProvider } from "@/context/CartContext";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { DownloadAppFloatingButton } from "@/components/DownloadAppFloatingButton";
+import { ScrollEngagementPopup } from "@/components/ScrollEngagementPopup";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,6 +19,13 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
   display: "swap",
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: "#064e3b",
+};
 
 export const metadata: Metadata = {
   title: "SokoLink — Kenya's Multi-Vendor SME E-commerce Platform",
@@ -39,6 +47,7 @@ export default function RootLayout({
             <main className="flex-1">{children}</main>
             <Footer />
             <DownloadAppFloatingButton />
+            <ScrollEngagementPopup />
           </CartProvider>
         </AuthProvider>
       </body>
